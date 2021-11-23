@@ -8,6 +8,7 @@ class TagAdmin(admin.ModelAdmin):
     list_display_links = ('id', 'name', 'slug')
     search_fields = ('name', 'slug')
     list_filter = ('name', 'slug')
+    ordering = ('id',)
 
 
 @admin.register(Ingredient)
