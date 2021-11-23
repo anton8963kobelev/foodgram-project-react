@@ -2,7 +2,7 @@ from rest_framework import serializers
 from recipes.models import Tag, Ingredient
 from djoser.serializers import UserSerializer, UserCreateSerializer
 
-from users.models import User
+from users.models import User, Follow
 
 
 class UserCreateCustomSerializer(UserCreateSerializer):
@@ -21,7 +21,9 @@ class UserCustomSerializer(UserSerializer):
                   # 'is_subscribed')
 
     # def get_is_subscribed(self, obj):
-    #     pass
+    #     user = request.user
+    #     author = obj.username
+    #     return Follow.objects.get(user=user, author=author).exists()
 
 
 class TagSerializer(serializers.ModelSerializer):

@@ -2,13 +2,16 @@ from rest_framework import viewsets
 from djoser.views import UserViewSet
 
 from recipes.models import Tag, Ingredient
-from users.models import User
-from .serializers import TagSerializer, IngredientSerializer, UserCustomSerializer
+from .serializers import TagSerializer, IngredientSerializer
 
 
 # class UserCustomViewSet(UserViewSet):
-#     queryset = User.objects.all()
-#     serializer_class = UserCustomSerializer
+#     def get_queryset(self):
+#         user = self.request.user
+#         queryset = super().get_queryset()
+#         if settings.HIDE_USERS and self.action == "list" and not user.is_staff:
+#             queryset = queryset.filter(pk=user.pk)
+#         return queryset
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
