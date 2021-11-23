@@ -27,7 +27,7 @@ class Recipe(models.Model):
                                on_delete=models.CASCADE)
     ingredients = models.ManyToManyField(Ingredient,
                                          related_name='recipe_ingredients',
-                                         through='AmountIngredient')
+                                         through='RecipeIngredient')
     name = models.CharField(max_length=200)
     image = models.FileField(upload_to='recipes/%Y-%m-%d/')
     text = models.TextField()
