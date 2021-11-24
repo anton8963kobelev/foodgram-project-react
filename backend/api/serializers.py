@@ -13,17 +13,19 @@ class UserCreateCustomSerializer(UserCreateSerializer):
 
 
 class UserCustomSerializer(UserSerializer):
-    # is_subscribed = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name')
-                  # 'is_subscribed')
+        fields = ('email', 'id', 'username', 'first_name', 'last_name',
+                  'is_subscribed')
 
-    # def get_is_subscribed(self, obj):
-    #     user = request.user
-    #     author = obj.username
-    #     return Follow.objects.get(user=user, author=author).exists()
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request', None)
+        if not request:
+            return False
+        user = request.user
+        return Follow.objects.filter(user=user, author=obj).exists()
 
 
 class TagSerializer(serializers.ModelSerializer):
