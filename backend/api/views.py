@@ -1,10 +1,13 @@
-from rest_framework import viewsets, permissions
-from rest_framework.decorators import action
+from rest_framework import views, viewsets, permissions, mixins, serializers, status
 from djoser.views import UserViewSet
 from djoser.conf import settings
+from rest_framework.response import Response
 
 from recipes.models import Tag, Ingredient
-from .serializers import TagSerializer, IngredientSerializer
+from users.models import User, Follow
+from .permissions import IsAuthenticatedReadOnly
+from .serializers import (TagSerializer, IngredientSerializer,
+                          UserCustomSerializer)
 
 
 class UserCustomViewSet(UserViewSet):
@@ -20,12 +23,6 @@ class UserCustomViewSet(UserViewSet):
             self.permission_classes = settings.PERMISSIONS.user_delete
         return super().get_permissions()
 
-    # @action(["get"], detail=False)
-    # def me(self, request, *args, **kwargs):
-    #     self.get_object = self.get_instance
-    #     if request.method == "GET":
-    #         return self.retrieve(request, *args, **kwargs)
-
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
@@ -37,3 +34,29 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (permissions.IsAdminUser,)
+
+
+# class CreateDestroyViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin,
+#                            viewsets.GenericViewSet):
+#     pass
+
+
+class FollowAPIView(views.APIView):
+    # serializer_class = UserCustomSerializer
+    # permission_classes = (IsAuthenticatedReadOnly,)
+
+    def get(self, request, user_id):
+        author = viewsets.generics.get_object_or_404(User, pk=user_id)
+        if (Follow.objects.filter(user=request.user,
+                                  author=author).exists()):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        if request.user == author:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        Follow.objects.create(user=request.user, author=author)
+        serializer = UserCustomSerializer(author)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, user_id):
+        author = viewsets.generics.get_object_or_404(User, pk=user_id)
+        Follow.objects.filter(user=request.user, author=author).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
