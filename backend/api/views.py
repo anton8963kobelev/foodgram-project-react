@@ -16,13 +16,15 @@ class UserCustomViewSet(UserViewSet):
             self.permission_classes = settings.PERMISSIONS.user_list
         elif self.action == "set_password":
             self.permission_classes = settings.PERMISSIONS.set_password
+        elif self.action == "destroy":
+            self.permission_classes = settings.PERMISSIONS.user_delete
         return super().get_permissions()
 
-    @action(["get"], detail=False)
-    def me(self, request, *args, **kwargs):
-        self.get_object = self.get_instance
-        if request.method == "GET":
-            return self.retrieve(request, *args, **kwargs)
+    # @action(["get"], detail=False)
+    # def me(self, request, *args, **kwargs):
+    #     self.get_object = self.get_instance
+    #     if request.method == "GET":
+    #         return self.retrieve(request, *args, **kwargs)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
