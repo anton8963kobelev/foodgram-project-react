@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from djoser.views import UserViewSet
 from djoser.conf import settings
@@ -10,8 +10,10 @@ from .serializers import TagSerializer, IngredientSerializer
 class UserCustomViewSet(UserViewSet):
 
     def get_permissions(self):
-        if self.action == "create" or self.action == "list":
+        if self.action == "create":
             self.permission_classes = settings.PERMISSIONS.user_create
+        elif self.action == "list":
+            self.permission_classes = settings.PERMISSIONS.user_list
         elif self.action == "set_password":
             self.permission_classes = settings.PERMISSIONS.set_password
         return super().get_permissions()
@@ -26,8 +28,10 @@ class UserCustomViewSet(UserViewSet):
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (permissions.IsAdminUser,)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    permission_classes = (permissions.IsAdminUser,)
