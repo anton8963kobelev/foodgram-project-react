@@ -7,7 +7,7 @@ from recipes.models import Tag, Ingredient
 from users.models import User, Follow
 from .permissions import IsAuthenticatedReadOnly
 from .serializers import (TagSerializer, IngredientSerializer,
-                          UserCustomSerializer)
+                          UserCustomSerializer, FollowSerializer)
 
 
 class UserCustomViewSet(UserViewSet):
@@ -47,16 +47,27 @@ class FollowAPIView(views.APIView):
 
     def get(self, request, user_id):
         author = viewsets.generics.get_object_or_404(User, pk=user_id)
+        serializer = FollowSerializer(author)
         if (Follow.objects.filter(user=request.user,
                                   author=author).exists()):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Вы уже подписаны на данного пользователя'},
+                status=status.HTTP_400_BAD_REQUEST)
         if request.user == author:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Нельзя подписаться на самого себя'},
+                            status=status.HTTP_400_BAD_REQUEST)
         Follow.objects.create(user=request.user, author=author)
-        serializer = UserCustomSerializer(author)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, user_id):
         author = viewsets.generics.get_object_or_404(User, pk=user_id)
+        if request.user == author:
+            return Response({'error': 'Нельзя удалить подпись на самого себя'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not (Follow.objects.filter(user=request.user,
+                                      author=author).exists()):
+            return Response(
+                {'error': 'Сначала надо подписаться на данного пользователя'},
+                status=status.HTTP_400_BAD_REQUEST)
         Follow.objects.filter(user=request.user, author=author).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
