@@ -2,6 +2,7 @@ from rest_framework import views, viewsets, permissions, mixins, serializers, st
 from djoser.views import UserViewSet
 from djoser.conf import settings
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
 from recipes.models import Tag, Ingredient
 from users.models import User, Follow
@@ -22,6 +23,17 @@ class UserCustomViewSet(UserViewSet):
         elif self.action == "destroy":
             self.permission_classes = settings.PERMISSIONS.user_delete
         return super().get_permissions()
+
+    @action(detail=False)
+    def subscriptions(self, request):
+        followings = Follow.objects.filter(
+            user_id=request.user.id).values('author_id')
+        author_id_list = []
+        for follow in followings:
+            author_id_list.append(follow.get('author_id'))
+        users = User.objects.filter(pk__in=author_id_list)
+        serializer = FollowSerializer(users, many=True)
+        return Response(serializer.data)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
