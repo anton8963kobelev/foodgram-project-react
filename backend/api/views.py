@@ -1,14 +1,13 @@
-from rest_framework import views, viewsets, permissions, mixins, serializers, status
+from rest_framework import views, viewsets, permissions, status
 from djoser.views import UserViewSet
 from djoser.conf import settings
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from recipes.models import Tag, Ingredient
+from recipes.models import Tag, Ingredient, Recipe
 from users.models import User, Follow
-from .permissions import IsAuthenticatedReadOnly
 from .serializers import (TagSerializer, IngredientSerializer,
-                          UserCustomSerializer, FollowSerializer)
+                          RecipeSerializer, FollowSerializer,)
 
 
 class UserCustomViewSet(UserViewSet):
@@ -48,14 +47,12 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAdminUser,)
 
 
-# class CreateDestroyViewSet(mixins.CreateModelMixin, mixins.DestroyModelMixin,
-#                            viewsets.GenericViewSet):
-#     pass
+class RecipeViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer
 
 
 class FollowAPIView(views.APIView):
-    # serializer_class = UserCustomSerializer
-    # permission_classes = (IsAuthenticatedReadOnly,)
 
     def get(self, request, user_id):
         author = viewsets.generics.get_object_or_404(User, pk=user_id)

@@ -29,7 +29,7 @@ class Recipe(models.Model):
                                          related_name='recipe_ingredients',
                                          through='RecipeIngredient')
     name = models.CharField(max_length=200)
-    image = models.FileField(upload_to='recipes/%Y-%m-%d/')
+    image = models.ImageField(upload_to='recipes/images/')
     text = models.TextField()
     cooking_time = models.PositiveSmallIntegerField(
         default=1,
