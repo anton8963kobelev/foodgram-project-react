@@ -1,11 +1,10 @@
-import base64, uuid
+import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-from recipes.models import Tag, Ingredient, Recipe
+from recipes.models import Tag, Ingredient, Recipe, RecipeTag
 from djoser.serializers import UserSerializer, UserCreateSerializer
 
 from users.models import User, Follow
-from recipes.models import Recipe
 
 
 class Base64ToImageField(serializers.ImageField):
@@ -57,24 +56,41 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    # tags = TagSerializer(many=True)
+    tags = TagSerializer(many=True, read_only=True)
     # author = UserCustomSerializer(required=False)
-    # ingredients = IngredientSerializer(many=True, required=False)  # required - временно
+    # ingredients = IngredientSerializer(many=True)
     # is_favorited = serializers.SerializerMethodField()
     # is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ToImageField()
 
     class Meta:
         model = Recipe
-        # fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited',
-        #           'is_in_shopping_cart', 'name', 'image', 'text',
-        #           'cooking_time')
-        fields = ('id', 'name', 'image', 'text', 'cooking_time')
+        fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited',
+                  'is_in_shopping_cart', 'name', 'image', 'text',
+                  'cooking_time')
+
+    def create(self, validated_data):
+        tags = self.initial_data.pop('tags')
+        recipe = Recipe.objects.create(**validated_data)
+        for tag in tags:
+            current_tag = Tag.objects.get(pk=tag)
+            RecipeTag.objects.create(recipe=recipe, tag=current_tag)
+        return recipe
+
+    def update(self, instance, validated_data):
+        recipe_id = instance.id
+        instance.delete()
+        tags = self.initial_data.pop('tags')
+        recipe = Recipe.objects.create(pk=recipe_id, **validated_data)
+        for tag in tags:
+            current_tag = Tag.objects.get(pk=tag)
+            RecipeTag.objects.create(recipe=recipe, tag=current_tag)
+        return recipe
 
 
 class FollowSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
-    recipes = RecipeSerializer(many=True, read_only=True, required=False)  # пока нет RecipeSerializer
+    recipes = RecipeSerializer(many=True, read_only=True)
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
