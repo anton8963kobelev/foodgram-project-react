@@ -69,6 +69,11 @@ class RecipeSerializer(serializers.ModelSerializer):
                   'is_in_shopping_cart', 'name', 'image', 'text',
                   'cooking_time')
 
+    def validate(self, data):
+        if 'tags' not in self.initial_data:
+            raise serializers.ValidationError('Tags field is required')
+        return data
+
     def create(self, validated_data):
         tags = self.initial_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)

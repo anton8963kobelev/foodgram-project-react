@@ -50,6 +50,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    http_method_names = ['get', 'post', 'put', 'delete']
 
 
 class FollowAPIView(views.APIView):
