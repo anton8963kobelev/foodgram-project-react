@@ -4,10 +4,11 @@ from djoser.conf import settings
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from recipes.models import Tag, Ingredient, Recipe
+from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
 from users.models import User, Follow
 from .serializers import (TagSerializer, IngredientSerializer,
-                          RecipeSerializer, FollowSerializer,)
+                          RecipeSerializer, FollowSerializer,
+                          RecipeLightSerializer)
 
 
 class UserCustomViewSet(UserViewSet):
@@ -52,6 +53,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     http_method_names = ['get', 'post', 'put', 'delete']
 
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
 
 class FollowAPIView(views.APIView):
 
@@ -80,4 +84,52 @@ class FollowAPIView(views.APIView):
                 {'error': 'Сначала надо подписаться на данного пользователя'},
                 status=status.HTTP_400_BAD_REQUEST)
         Follow.objects.filter(user=request.user, author=author).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FavoriteAPIView(views.APIView):
+
+    def get(self, request, recipe_id):
+        recipe = viewsets.generics.get_object_or_404(Recipe, pk=recipe_id)
+        serializer = RecipeLightSerializer(recipe)
+        if (Favorite.objects.filter(user=request.user,
+                                    recipe=recipe).exists()):
+            return Response(
+                {'error': 'Рецепт уже добавлен в избранное'},
+                status=status.HTTP_400_BAD_REQUEST)
+        Favorite.objects.create(user=request.user, recipe=recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, recipe_id):
+        recipe = viewsets.generics.get_object_or_404(Recipe, pk=recipe_id)
+        if not (Favorite.objects.filter(user=request.user,
+                                        recipe=recipe).exists()):
+            return Response(
+                {'error': 'Сначала надо добавить рецепт в избранное'},
+                status=status.HTTP_400_BAD_REQUEST)
+        Favorite.objects.filter(user=request.user, recipe=recipe).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ShoppingCartAPIView(views.APIView):
+
+    def get(self, request, recipe_id):
+        recipe = viewsets.generics.get_object_or_404(Recipe, pk=recipe_id)
+        serializer = RecipeLightSerializer(recipe)
+        if (ShoppingCart.objects.filter(user=request.user,
+                                        recipe=recipe).exists()):
+            return Response(
+                {'error': 'Рецепт уже добавлен в список покупок'},
+                status=status.HTTP_400_BAD_REQUEST)
+        ShoppingCart.objects.create(user=request.user, recipe=recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, recipe_id):
+        recipe = viewsets.generics.get_object_or_404(Recipe, pk=recipe_id)
+        if not (ShoppingCart.objects.filter(user=request.user,
+                                            recipe=recipe).exists()):
+            return Response(
+                {'error': 'Сначала надо добавить рецепт в список покупок'},
+                status=status.HTTP_400_BAD_REQUEST)
+        ShoppingCart.objects.filter(user=request.user, recipe=recipe).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
