@@ -1,7 +1,7 @@
 import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-from recipes.models import Tag, Ingredient, Recipe, RecipeTag
+from recipes.models import Tag, Ingredient, Recipe, RecipeTag, RecipeIngredient
 from djoser.serializers import UserSerializer, UserCreateSerializer
 
 from users.models import User, Follow
@@ -55,10 +55,22 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit')
 
 
+class RecipeIngredientSerializer(serializers.ModelSerializer):
+    name = serializers.StringRelatedField(source='ingredient.name')
+    measurement_unit = serializers.StringRelatedField(
+        source='ingredient.measurement_unit')
+    id = serializers.PrimaryKeyRelatedField(source='ingredient',
+                                            queryset=Ingredient.objects.all())
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ('id', 'name', 'measurement_unit', 'amount')
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     # author = UserCustomSerializer(required=False)
-    # ingredients = IngredientSerializer(many=True)
+    ingredients = serializers.SerializerMethodField()
     # is_favorited = serializers.SerializerMethodField()
     # is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ToImageField()
@@ -68,6 +80,11 @@ class RecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited',
                   'is_in_shopping_cart', 'name', 'image', 'text',
                   'cooking_time')
+
+    def get_ingredients(self, obj):
+        return RecipeIngredientSerializer(
+            RecipeIngredient.objects.filter(recipe=obj).all(), many=True
+        ).data
 
     def validate(self, data):
         if 'tags' not in self.initial_data:
