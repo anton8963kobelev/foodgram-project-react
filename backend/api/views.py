@@ -12,6 +12,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from collections import Counter
 
+from .permissions import IsAuthorOrAdminorReadOnly
 from recipes.models import (Tag, Ingredient, Recipe, Favorite, ShoppingCart,
                             RecipeIngredient)
 from users.models import User, Follow
@@ -25,7 +26,7 @@ class UserCustomViewSet(UserViewSet):
     def get_permissions(self):
         if self.action == "create":
             self.permission_classes = settings.PERMISSIONS.user_create
-        elif self.action == "list":
+        elif self.action == "list" or self.action == 'retrieve':
             self.permission_classes = settings.PERMISSIONS.user_list
         elif self.action == "set_password":
             self.permission_classes = settings.PERMISSIONS.set_password
@@ -63,7 +64,7 @@ class UserCustomViewSet(UserViewSet):
             Follow.objects.filter(user=request.user, author=author).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False)
+    @action(detail=False, permission_classes=(permissions.IsAuthenticated,))
     def subscriptions(self, request):
         followings = Follow.objects.filter(
             user_id=request.user.id).values('author_id')
@@ -93,6 +94,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     http_method_names = ['get', 'post', 'put', 'delete']
+    permission_classes = (IsAuthorOrAdminorReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('tags',)
 
@@ -100,6 +102,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     @action(detail=False, methods=['get', 'delete'],
+            permission_classes=(permissions.IsAuthenticated,),
             url_path=r'(?P<id>[\d]+)/favorite')
     def recipe_in_favorite(self, request, **kwargs):
         if request.method == 'GET':
@@ -125,6 +128,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get', 'delete'],
+            permission_classes=(permissions.IsAuthenticated,),
             url_path=r'(?P<id>[\d]+)/shopping_cart')
     def recipe_in_shopping_cart(self, request, **kwargs):
         if request.method == 'GET':
@@ -151,7 +155,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                         recipe=recipe).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False)
+    @action(detail=False, permission_classes=(permissions.IsAuthenticated,))
     def download_shopping_cart(self, request):
         ingredients_list = []
         in_shopping_cart = ShoppingCart.objects.filter(
