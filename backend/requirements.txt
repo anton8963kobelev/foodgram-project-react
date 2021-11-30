@@ -4,3 +4,4 @@ python-decouple
 djangorestframework
 djoser
 Pillow
+reportlab

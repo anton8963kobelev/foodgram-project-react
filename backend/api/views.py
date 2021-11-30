@@ -4,7 +4,15 @@ from djoser.conf import settings
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
+import io
+from django.http import FileResponse
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from collections import Counter
+
+from recipes.models import (Tag, Ingredient, Recipe, Favorite, ShoppingCart,
+                            RecipeIngredient)
 from users.models import User, Follow
 from .serializers import (TagSerializer, IngredientSerializer,
                           RecipeSerializer, FollowSerializer,
@@ -55,6 +63,47 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    @action(detail=False)
+    def download_shopping_cart(self, request):
+        ingredients_list = []
+        in_shopping_cart = ShoppingCart.objects.filter(
+            user_id=request.user.id).values('recipe_id')
+        for recipe in in_shopping_cart:
+            recipe_id = recipe.get('recipe_id')
+            ingredients = RecipeIngredient.objects.filter(
+                recipe_id=recipe_id).values('ingredient_id', 'amount')
+            for ingredient in ingredients:
+                ingredient_id = ingredient.get('ingredient_id')
+                name = Ingredient.objects.get(pk=ingredient_id).name
+                measurement_unit = (Ingredient.objects.get(
+                                    pk=ingredient_id).measurement_unit)
+                amount = ingredient.get('amount')
+                ingredient_dict = {
+                    'name': f'{name} ({measurement_unit})',
+                    'amount': amount,
+                }
+                ingredients_list.append(ingredient_dict)
+
+        counter = Counter()
+        for ingredient in ingredients_list:
+            key, value = ingredient.get('name'), ingredient.get('amount')
+            counter.update({key: value})
+
+        ingredients_unique_list = [{'name': key, 'amount': value} for key, value in counter.items()]
+
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer)
+        pdfmetrics.registerFont(TTFont('FreeSans-LrmZ', 'FreeSans-LrmZ.ttf'))
+        p.setFont('FreeSans-LrmZ', 16)
+        x = 774
+        for ingredient in ingredients_unique_list:
+            p.drawString(72, x, f"- {ingredient['name']} - {ingredient['amount']}")
+            x -= 18
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename='shopping_cart.pdf')
 
 
 class FollowAPIView(views.APIView):
