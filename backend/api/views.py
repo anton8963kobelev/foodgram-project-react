@@ -1,8 +1,9 @@
-from rest_framework import views, viewsets, permissions, status
+from rest_framework import views, viewsets, permissions, status, filters
 from djoser.views import UserViewSet
 from djoser.conf import settings
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from django_filters.rest_framework import DjangoFilterBackend
 
 import io
 from django.http import FileResponse
@@ -54,12 +55,16 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (permissions.IsAdminUser,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('@name',)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     http_method_names = ['get', 'post', 'put', 'delete']
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('tags',)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)

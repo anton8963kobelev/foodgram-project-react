@@ -5,3 +5,4 @@ djangorestframework
 djoser
 Pillow
 reportlab
+django-filter
