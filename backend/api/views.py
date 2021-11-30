@@ -1,4 +1,4 @@
-from rest_framework import views, viewsets, permissions, status, filters
+from rest_framework import viewsets, permissions, status, filters
 from djoser.views import UserViewSet
 from djoser.conf import settings
 from rest_framework.response import Response
@@ -32,6 +32,36 @@ class UserCustomViewSet(UserViewSet):
         elif self.action == "destroy":
             self.permission_classes = settings.PERMISSIONS.user_delete
         return super().get_permissions()
+
+    @action(detail=False, methods=['get', 'delete'],
+            permission_classes=(permissions.IsAuthenticated,),
+            url_path=r'(?P<id>[\d]+)/subscribe')
+    def subscribe(self, request, **kwargs):
+        if request.method == 'GET':
+            author = viewsets.generics.get_object_or_404(User, pk=kwargs['id'])
+            serializer = FollowSerializer(author)
+            if (Follow.objects.filter(user=request.user,
+                                      author=author).exists()):
+                return Response(
+                    {'error': 'Вы уже подписаны на пользователя'},
+                    status=status.HTTP_400_BAD_REQUEST)
+            if request.user == author:
+                return Response({'error': 'Нельзя подписаться на себя'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            Follow.objects.create(user=request.user, author=author)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.method == 'DELETE':
+            author = viewsets.generics.get_object_or_404(User, pk=kwargs['id'])
+            if request.user == author:
+                return Response({'error': 'Нельзя удалить подпись на себя'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if not (Follow.objects.filter(user=request.user,
+                                          author=author).exists()):
+                return Response(
+                    {'error': 'Сначала надо подписаться на пользователя'},
+                    status=status.HTTP_400_BAD_REQUEST)
+            Follow.objects.filter(user=request.user, author=author).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False)
     def subscriptions(self, request):
@@ -69,6 +99,58 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    @action(detail=False, methods=['get', 'delete'],
+            url_path=r'(?P<id>[\d]+)/favorite')
+    def recipe_in_favorite(self, request, **kwargs):
+        if request.method == 'GET':
+            recipe = viewsets.generics.get_object_or_404(Recipe,
+                                                         pk=kwargs['id'])
+            serializer = RecipeLightSerializer(recipe)
+            if (Favorite.objects.filter(user=request.user,
+                                        recipe=recipe).exists()):
+                return Response(
+                    {'error': 'Рецепт уже добавлен в избранное'},
+                    status=status.HTTP_400_BAD_REQUEST)
+            Favorite.objects.create(user=request.user, recipe=recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.method == 'DELETE':
+            recipe = viewsets.generics.get_object_or_404(Recipe,
+                                                         pk=kwargs['id'])
+            if not (Favorite.objects.filter(user=request.user,
+                                            recipe=recipe).exists()):
+                return Response(
+                    {'error': 'Сначала надо добавить рецепт в избранное'},
+                    status=status.HTTP_400_BAD_REQUEST)
+            Favorite.objects.filter(user=request.user, recipe=recipe).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get', 'delete'],
+            url_path=r'(?P<id>[\d]+)/shopping_cart')
+    def recipe_in_shopping_cart(self, request, **kwargs):
+        if request.method == 'GET':
+            recipe = viewsets.generics.get_object_or_404(Recipe,
+                                                         pk=kwargs['id'])
+            serializer = RecipeLightSerializer(recipe)
+            if (ShoppingCart.objects.filter(user=request.user,
+                                            recipe=recipe).exists()):
+                return Response(
+                    {'error': 'Рецепт уже добавлен в список покупок'},
+                    status=status.HTTP_400_BAD_REQUEST)
+            ShoppingCart.objects.create(user=request.user, recipe=recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if request.method == 'DELETE':
+            recipe = viewsets.generics.get_object_or_404(Recipe,
+                                                         pk=kwargs['id'])
+            if not (ShoppingCart.objects.filter(user=request.user,
+                                                recipe=recipe).exists()):
+                return Response(
+                    {'error': 'Сначала надо добавить рецепт в список покупок'},
+                    status=status.HTTP_400_BAD_REQUEST)
+            ShoppingCart.objects.filter(user=request.user,
+                                        recipe=recipe).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
     @action(detail=False)
     def download_shopping_cart(self, request):
         ingredients_list = []
@@ -95,7 +177,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             key, value = ingredient.get('name'), ingredient.get('amount')
             counter.update({key: value})
 
-        ingredients_unique_list = [{'name': key, 'amount': value} for key, value in counter.items()]
+        ingredients_unique_list = [
+            {'name': key, 'amount': value} for key, value in counter.items()
+        ]
 
         buffer = io.BytesIO()
         p = canvas.Canvas(buffer)
@@ -103,87 +187,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         p.setFont('FreeSans-LrmZ', 16)
         x = 774
         for ingredient in ingredients_unique_list:
-            p.drawString(72, x, f"- {ingredient['name']} - {ingredient['amount']}")
+            p.drawString(72, x,
+                         f"- {ingredient['name']} - {ingredient['amount']}")
             x -= 18
         p.showPage()
         p.save()
         buffer.seek(0)
-        return FileResponse(buffer, as_attachment=True, filename='shopping_cart.pdf')
-
-
-class FollowAPIView(views.APIView):
-
-    def get(self, request, user_id):
-        author = viewsets.generics.get_object_or_404(User, pk=user_id)
-        serializer = FollowSerializer(author)
-        if (Follow.objects.filter(user=request.user,
-                                  author=author).exists()):
-            return Response(
-                {'error': 'Вы уже подписаны на данного пользователя'},
-                status=status.HTTP_400_BAD_REQUEST)
-        if request.user == author:
-            return Response({'error': 'Нельзя подписаться на самого себя'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        Follow.objects.create(user=request.user, author=author)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, user_id):
-        author = viewsets.generics.get_object_or_404(User, pk=user_id)
-        if request.user == author:
-            return Response({'error': 'Нельзя удалить подпись на самого себя'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if not (Follow.objects.filter(user=request.user,
-                                      author=author).exists()):
-            return Response(
-                {'error': 'Сначала надо подписаться на данного пользователя'},
-                status=status.HTTP_400_BAD_REQUEST)
-        Follow.objects.filter(user=request.user, author=author).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class FavoriteAPIView(views.APIView):
-
-    def get(self, request, recipe_id):
-        recipe = viewsets.generics.get_object_or_404(Recipe, pk=recipe_id)
-        serializer = RecipeLightSerializer(recipe)
-        if (Favorite.objects.filter(user=request.user,
-                                    recipe=recipe).exists()):
-            return Response(
-                {'error': 'Рецепт уже добавлен в избранное'},
-                status=status.HTTP_400_BAD_REQUEST)
-        Favorite.objects.create(user=request.user, recipe=recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, recipe_id):
-        recipe = viewsets.generics.get_object_or_404(Recipe, pk=recipe_id)
-        if not (Favorite.objects.filter(user=request.user,
-                                        recipe=recipe).exists()):
-            return Response(
-                {'error': 'Сначала надо добавить рецепт в избранное'},
-                status=status.HTTP_400_BAD_REQUEST)
-        Favorite.objects.filter(user=request.user, recipe=recipe).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ShoppingCartAPIView(views.APIView):
-
-    def get(self, request, recipe_id):
-        recipe = viewsets.generics.get_object_or_404(Recipe, pk=recipe_id)
-        serializer = RecipeLightSerializer(recipe)
-        if (ShoppingCart.objects.filter(user=request.user,
-                                        recipe=recipe).exists()):
-            return Response(
-                {'error': 'Рецепт уже добавлен в список покупок'},
-                status=status.HTTP_400_BAD_REQUEST)
-        ShoppingCart.objects.create(user=request.user, recipe=recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, recipe_id):
-        recipe = viewsets.generics.get_object_or_404(Recipe, pk=recipe_id)
-        if not (ShoppingCart.objects.filter(user=request.user,
-                                            recipe=recipe).exists()):
-            return Response(
-                {'error': 'Сначала надо добавить рецепт в список покупок'},
-                status=status.HTTP_400_BAD_REQUEST)
-        ShoppingCart.objects.filter(user=request.user, recipe=recipe).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return FileResponse(buffer, as_attachment=True,
+                            filename='shopping_cart.pdf')
