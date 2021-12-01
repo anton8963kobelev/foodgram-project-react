@@ -13,6 +13,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from collections import Counter
 
 from .permissions import IsAuthorOrAdminorReadOnly
+from recipes.filters import RecipeFilter
 from recipes.models import (Tag, Ingredient, Recipe, Favorite, ShoppingCart,
                             RecipeIngredient)
 from users.models import User, Follow
@@ -95,8 +96,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     http_method_names = ['get', 'post', 'put', 'delete']
     permission_classes = (IsAuthorOrAdminorReadOnly,)
-    filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('tags',)
+
+    def get_queryset(self):
+        queryset = Recipe.objects.all()
+        tags = self.request.query_params.getlist('tags')
+        if tags is not None:
+            queryset = queryset.filter(tags__slug__in=tags).distinct()
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
