@@ -22,6 +22,7 @@ from .serializers import (TagSerializer, IngredientSerializer,
 
 
 class UserCustomViewSet(UserViewSet):
+    pagination_class = CustomPaginator
 
     def get_permissions(self):
         if self.action == "create":
@@ -72,9 +73,9 @@ class UserCustomViewSet(UserViewSet):
         for follow in followings:
             author_id_list.append(follow.get('author_id'))
         users = User.objects.filter(pk__in=author_id_list)
-        # serializer = FollowSerializer(users, many=True)
         paginator = CustomPaginator()
-        response = paginator.generate_response(users, FollowSerializer, request)
+        response = paginator.generate_response(users, FollowSerializer,
+                                               request)
         return response
 
 
@@ -98,6 +99,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     http_method_names = ['get', 'post', 'put', 'delete']
     permission_classes = (IsAuthorOrAdminorReadOnly,)
+    pagination_class = CustomPaginator
 
     def get_queryset(self):
         queryset = Recipe.objects.all()

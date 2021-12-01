@@ -6,6 +6,8 @@ from rest_framework.response import Response
 
 class CustomPaginator(PageNumberPagination):
     page_size = 6
+    page_size_query_param = 'limit'
+    page_query_param = 'page'
 
     def generate_response(self, queryset, serializer_obj, request):
         try:
