@@ -3,7 +3,6 @@ from djoser.views import UserViewSet
 from djoser.conf import settings
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django_filters.rest_framework import DjangoFilterBackend
 
 import io
 from django.http import FileResponse
@@ -13,7 +12,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from collections import Counter
 
 from .permissions import IsAuthorOrAdminorReadOnly
-from recipes.filters import RecipeFilter
+from .paginations import CustomPaginator
 from recipes.models import (Tag, Ingredient, Recipe, Favorite, ShoppingCart,
                             RecipeIngredient)
 from users.models import User, Follow
@@ -65,7 +64,7 @@ class UserCustomViewSet(UserViewSet):
             Follow.objects.filter(user=request.user, author=author).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, permission_classes=(permissions.IsAuthenticated,))
+    @action(detail=False, permission_classes=(permissions.IsAuthenticated,),)
     def subscriptions(self, request):
         followings = Follow.objects.filter(
             user_id=request.user.id).values('author_id')
@@ -73,26 +72,29 @@ class UserCustomViewSet(UserViewSet):
         for follow in followings:
             author_id_list.append(follow.get('author_id'))
         users = User.objects.filter(pk__in=author_id_list)
-        serializer = FollowSerializer(users, many=True)
-        return Response(serializer.data)
+        # serializer = FollowSerializer(users, many=True)
+        paginator = CustomPaginator()
+        response = paginator.generate_response(users, FollowSerializer, request)
+        return response
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = (permissions.IsAdminUser,)
+    pagination_class = None
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (permissions.IsAdminUser,)
+    pagination_class = None
     filter_backends = (filters.SearchFilter,)
     search_fields = ('@name',)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     http_method_names = ['get', 'post', 'put', 'delete']
     permission_classes = (IsAuthorOrAdminorReadOnly,)
@@ -100,7 +102,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Recipe.objects.all()
         tags = self.request.query_params.getlist('tags')
-        if tags is not None:
+        if tags:
             queryset = queryset.filter(tags__slug__in=tags).distinct()
         return queryset
 
