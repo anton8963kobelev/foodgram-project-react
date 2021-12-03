@@ -6,3 +6,4 @@ djoser
 Pillow
 reportlab
 django-filter
+gunicorn
