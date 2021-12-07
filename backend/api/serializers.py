@@ -1,6 +1,7 @@
 import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
+# from rest_framework.serializers import ValidationError
 from recipes.models import (Tag, Ingredient, Recipe, RecipeTag,
                             RecipeIngredient, Favorite, ShoppingCart)
 from djoser.serializers import UserSerializer, UserCreateSerializer

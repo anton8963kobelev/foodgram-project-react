@@ -11,14 +11,14 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from collections import Counter
 
-from .permissions import IsAuthorOrAdminorReadOnly
+from .permissions import IsAuthorOrAdminOrReadOnly, IsAdminOrReadOnly
 from .paginations import CustomPaginator
 from recipes.models import (Tag, Ingredient, Recipe, Favorite, ShoppingCart,
                             RecipeIngredient)
 from users.models import User, Follow
 from .serializers import (TagSerializer, IngredientSerializer,
-                          RecipeSerializer, FollowSerializer,
-                          RecipeLightSerializer)
+                          # RecipeWriteSerializer, RecipeReadSerializer,
+                          RecipeSerializer, FollowSerializer, RecipeLightSerializer)
 
 
 class UserCustomViewSet(UserViewSet):
@@ -82,24 +82,36 @@ class UserCustomViewSet(UserViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    # permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (IsAdminOrReadOnly,)
     pagination_class = None
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    # permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (IsAdminOrReadOnly,)
     pagination_class = None
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('@name',)
+    # filter_backends = (filters.SearchFilter,)
+    # search_fields = ('@name',)
+
+    def get_queryset(self):
+        queryset = Ingredient.objects.all()
+        name = self.request.query_params.get('name')
+        if name:
+            queryset = queryset.filter(name__startswith=name.lower())
+        return queryset
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     http_method_names = ['get', 'post', 'put', 'delete']
-    permission_classes = (IsAuthorOrAdminorReadOnly,)
+    permission_classes = (IsAuthorOrAdminOrReadOnly,)
     pagination_class = CustomPaginator
+
+    # def get_serializer_class(self):
+    #     if self.action == 'list' or self.action == 'retrieve':
+    #         return RecipeReadSerializer
+    #     return RecipeWriteSerializer
 
     def get_queryset(self):
         queryset = Recipe.objects.all()
