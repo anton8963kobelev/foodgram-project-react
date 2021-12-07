@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 import io
+import reportlab
+from foodgram.settings import BASE_DIR
 from django.http import FileResponse
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -108,11 +110,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrAdminOrReadOnly,)
     pagination_class = CustomPaginator
 
-    # def get_serializer_class(self):
-    #     if self.action == 'list' or self.action == 'retrieve':
-    #         return RecipeReadSerializer
-    #     return RecipeWriteSerializer
-
     def get_queryset(self):
         queryset = Recipe.objects.all()
         tags = self.request.query_params.getlist('tags')
@@ -209,6 +206,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         buffer = io.BytesIO()
         p = canvas.Canvas(buffer)
+        reportlab.rl_config.TTFSearchPath.append(str(BASE_DIR) + '/static')
         pdfmetrics.registerFont(TTFont('FreeSans-LrmZ', 'FreeSans-LrmZ.ttf'))
         p.setFont('FreeSans-LrmZ', 16)
         x = 774
