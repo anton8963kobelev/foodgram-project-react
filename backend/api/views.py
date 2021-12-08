@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, status, filters
+from rest_framework import viewsets, permissions, status
 from djoser.views import UserViewSet
 from djoser.conf import settings
 from rest_framework.response import Response
@@ -78,12 +78,8 @@ class UserCustomViewSet(UserViewSet):
 
     @action(detail=False, permission_classes=(permissions.IsAuthenticated,),)
     def subscriptions(self, request):
-        followings = Follow.objects.filter(
-            user_id=request.user.id).values('author_id')
-        author_id_list = []
-        for follow in followings:
-            author_id_list.append(follow.get('author_id'))
-        users = User.objects.filter(pk__in=author_id_list)
+        users = queryset_filter(self, model_id_list=Follow,
+                                model_main=User, value='author_id')
         paginator = CustomPaginator()
         response = paginator.generate_response(users, FollowSerializer,
                                                request)
@@ -126,6 +122,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.query_params.get('is_in_shopping_cart'):
             queryset = queryset_filter(self, model_id_list=ShoppingCart,
                                        model_main=Recipe, value='recipe_id')
+        author_id = self.request.query_params.get('author')
+        if author_id:
+            queryset = queryset.filter(author__id=author_id)
         tags = self.request.query_params.getlist('tags')
         if tags:
             queryset = queryset.filter(tags__slug__in=tags).distinct()
