@@ -22,7 +22,7 @@ class IngredientAdmin(admin.ModelAdmin):
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'author', 'publication_date')
+    list_display = ('id', 'name', 'author', 'in_favorite_count')
     list_display_links = ('id', 'name', 'author')
     search_fields = ('name', 'author__username', 'tags__name')
     list_filter = ('name', 'author__username', 'tags__name')

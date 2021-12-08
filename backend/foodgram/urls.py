@@ -16,7 +16,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
+from django.conf.urls import handler404
 from django.conf.urls.static import static
+from api.views import error404  # пока просто редирект на рецепты. Потом!
 
 
 urlpatterns = [
@@ -24,6 +26,7 @@ urlpatterns = [
     path('api/', include('api.urls')),
 ]
 
+handler404 = error404  # noqa
 
 if settings.DEBUG:
     urlpatterns += (static(settings.MEDIA_URL,

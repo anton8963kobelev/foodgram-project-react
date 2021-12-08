@@ -3,6 +3,7 @@ from djoser.views import UserViewSet
 from djoser.conf import settings
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 
 import io
 import reportlab
@@ -18,9 +19,13 @@ from .paginations import CustomPaginator
 from recipes.models import (Tag, Ingredient, Recipe, Favorite, ShoppingCart,
                             RecipeIngredient)
 from users.models import User, Follow
-from .serializers import (UserCustomSerializer, TagSerializer,
-                          IngredientSerializer, RecipeSerializer,
-                          FollowSerializer, RecipeLightSerializer)
+from .serializers import (TagSerializer, IngredientSerializer,
+                          RecipeSerializer, FollowSerializer,
+                          RecipeLightSerializer)
+
+
+def error404(request):
+    raise NotFound(detail="Ошибка 404, страница не найдена", code=404)
 
 
 def queryset_filter(self, model_id_list, model_main, value):

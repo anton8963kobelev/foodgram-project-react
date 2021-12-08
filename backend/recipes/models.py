@@ -1,5 +1,6 @@
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.contrib import admin
 from users.models import User
 
 
@@ -39,6 +40,10 @@ class Recipe(models.Model):
 
     class Meta:
         ordering = ('-publication_date',)
+
+    @admin.display(description='В избранном')
+    def in_favorite_count(self):
+        return Favorite.objects.filter(recipe_id=self.id).count()
 
     def __str__(self):
         return self.name
