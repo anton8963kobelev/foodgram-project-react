@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Tag, Ingredient, Recipe
+from .models import (Tag, Ingredient, Recipe, RecipeTag, RecipeIngredient,
+                     Favorite, ShoppingCart)
 
 
 @admin.register(Tag)
@@ -26,4 +27,31 @@ class RecipeAdmin(admin.ModelAdmin):
     list_display_links = ('id', 'name', 'author')
     search_fields = ('name', 'author__username', 'tags__name')
     list_filter = ('name', 'author__username', 'tags__name')
-    # Вывести общее число добавлений выбранного рецепта в избранное!!
+
+
+@admin.register(RecipeTag)
+class RecipeTagAdmin(admin.ModelAdmin):
+    list_display = ('id', 'recipe', 'tag')
+    list_display_links = ('id',)
+    ordering = ('id',)
+
+
+@admin.register(RecipeIngredient)
+class RecipeIngredientAdmin(admin.ModelAdmin):
+    list_display = ('id', 'recipe', 'ingredient', 'amount')
+    list_display_links = ('id',)
+    ordering = ('id',)
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'recipe')
+    list_display_links = ('id',)
+    ordering = ('id',)
+
+
+@admin.register(ShoppingCart)
+class ShoppingCartAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'recipe')
+    list_display_links = ('id',)
+    ordering = ('id',)
