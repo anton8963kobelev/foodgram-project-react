@@ -33,7 +33,8 @@ class Recipe(models.Model):
     text = models.TextField()
     cooking_time = models.PositiveSmallIntegerField(
         default=1,
-        validators=[MinValueValidator(1)])
+        validators=[MinValueValidator(limit_value=1,
+                    message='Время приготовления должно быть больше 0')])
     publication_date = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
@@ -51,7 +52,10 @@ class RecipeTag(models.Model):
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.PROTECT)
-    amount = models.PositiveIntegerField(default=1)
+    amount = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[MinValueValidator(limit_value=1,
+                    message='Количество ингредиента должно быть больше 0')])
 
 
 class Favorite(models.Model):

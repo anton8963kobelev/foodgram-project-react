@@ -106,7 +106,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
-    http_method_names = ['get', 'post', 'put', 'delete']
+    # http_method_names = ['get', 'post', 'put', 'delete']
     permission_classes = (IsAuthorOrAdminOrReadOnly,)
     pagination_class = CustomPaginator
 

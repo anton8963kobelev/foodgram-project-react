@@ -1,7 +1,6 @@
 import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-# from rest_framework.serializers import ValidationError
 from recipes.models import (Tag, Ingredient, Recipe, RecipeTag,
                             RecipeIngredient, Favorite, ShoppingCart)
 from djoser.serializers import UserSerializer, UserCreateSerializer
@@ -111,6 +110,21 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Tags field is required')
         if 'ingredients' not in self.initial_data:
             raise serializers.ValidationError('Ingredients field is required')
+        ingredients = self.initial_data.get('ingredients')
+        ingredients_dict = {}
+        for ingredient in ingredients:
+            if int(ingredient['amount']) <= 0:
+                raise serializers.ValidationError(
+                    'Количество ингредиента должно быть больше нуля')
+            if ingredient['id'] not in ingredients_dict:
+                instance = ingredient['id']
+                ingredients_dict[instance] = True
+            else:
+                raise serializers.ValidationError(
+                    'Ингридиенты не должны повторяться')
+            if data['cooking_time'] <= 0:
+                raise serializers.ValidationError(
+                    'Время готовки должно быть больше нуля')
         return data
 
     def create(self, validated_data):
