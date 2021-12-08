@@ -23,6 +23,15 @@ from .serializers import (TagSerializer, IngredientSerializer,
                           RecipeSerializer, FollowSerializer, RecipeLightSerializer)
 
 
+def queryset_filter(self, model_id_list, model_main, value):
+    instances = model_id_list.objects.filter(
+                user_id=self.request.user.id).values(value)
+    instance_id_list = []
+    for instance in instances:
+        instance_id_list.append(instance.get(value))
+    return model_main.objects.filter(pk__in=instance_id_list)
+
+
 class UserCustomViewSet(UserViewSet):
     pagination_class = CustomPaginator
 
@@ -106,12 +115,17 @@ class IngredientViewSet(viewsets.ModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
-    # http_method_names = ['get', 'post', 'put', 'delete']
     permission_classes = (IsAuthorOrAdminOrReadOnly,)
     pagination_class = CustomPaginator
 
     def get_queryset(self):
         queryset = Recipe.objects.all()
+        if self.request.query_params.get('is_favorited'):
+            queryset = queryset_filter(self, model_id_list=Favorite,
+                                       model_main=Recipe, value='recipe_id')
+        if self.request.query_params.get('is_in_shopping_cart'):
+            queryset = queryset_filter(self, model_id_list=ShoppingCart,
+                                       model_main=Recipe, value='recipe_id')
         tags = self.request.query_params.getlist('tags')
         if tags:
             queryset = queryset.filter(tags__slug__in=tags).distinct()
@@ -135,6 +149,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST)
             Favorite.objects.create(user=request.user, recipe=recipe)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         if request.method == 'DELETE':
             recipe = viewsets.generics.get_object_or_404(Recipe,
                                                          pk=kwargs['id'])
