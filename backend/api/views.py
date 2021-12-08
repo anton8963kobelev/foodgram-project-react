@@ -133,8 +133,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         tags = self.request.query_params.getlist('tags')
         if tags:
             queryset = queryset.filter(tags__slug__in=tags).distinct()
-        else:
-            queryset = []
         return queryset
 
     def perform_create(self, serializer):

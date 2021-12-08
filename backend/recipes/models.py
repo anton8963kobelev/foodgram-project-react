@@ -41,7 +41,7 @@ class Recipe(models.Model):
     class Meta:
         ordering = ('-publication_date',)
 
-    @admin.display(description='В избранном')
+    @admin.display(description='In favorite')
     def in_favorite_count(self):
         return Favorite.objects.filter(recipe_id=self.id).count()
 
