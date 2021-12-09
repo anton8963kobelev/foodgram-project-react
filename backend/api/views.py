@@ -12,29 +12,20 @@ from django.http import FileResponse
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from collections import Counter
+# from collections import Counter
 
 from .permissions import IsAuthorOrAdminOrReadOnly, IsAdminOrReadOnly
 from .paginations import CustomPaginator
-from recipes.models import (Tag, Ingredient, Recipe, Favorite, ShoppingCart,
-                            RecipeIngredient)
+from recipes.models import (Tag, Ingredient, Recipe, Favorite, ShoppingCart)
 from users.models import User, Follow
 from .serializers import (TagSerializer, IngredientSerializer,
                           RecipeSerializer, FollowSerializer,
                           RecipeLightSerializer)
+from .utils import queryset_filter, get_ingredients_unique_list
 
 
 def error404(request):
     raise NotFound(detail="Ошибка 404, страница не найдена", code=404)
-
-
-def queryset_filter(self, model_id_list, model_main, value):
-    instances = model_id_list.objects.filter(
-                user_id=self.request.user.id).values(value)
-    instance_id_list = []
-    for instance in instances:
-        instance_id_list.append(instance.get(value))
-    return model_main.objects.filter(pk__in=instance_id_list)
 
 
 class UserCustomViewSet(UserViewSet):
@@ -103,8 +94,6 @@ class IngredientViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientSerializer
     permission_classes = (IsAdminOrReadOnly,)
     pagination_class = None
-    # filter_backends = (filters.SearchFilter,)
-    # search_fields = ('@name',)
 
     def get_queryset(self):
         queryset = Ingredient.objects.all()
@@ -195,34 +184,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, permission_classes=(permissions.IsAuthenticated,))
     def download_shopping_cart(self, request):
-        ingredients_list = []
         in_shopping_cart = ShoppingCart.objects.filter(
             user_id=request.user.id).values('recipe_id')
-        for recipe in in_shopping_cart:
-            recipe_id = recipe.get('recipe_id')
-            ingredients = RecipeIngredient.objects.filter(
-                recipe_id=recipe_id).values('ingredient_id', 'amount')
-            for ingredient in ingredients:
-                ingredient_id = ingredient.get('ingredient_id')
-                name = Ingredient.objects.get(pk=ingredient_id).name
-                measurement_unit = (Ingredient.objects.get(
-                                    pk=ingredient_id).measurement_unit)
-                amount = ingredient.get('amount')
-                ingredient_dict = {
-                    'name': f'{name} ({measurement_unit})',
-                    'amount': amount,
-                }
-                ingredients_list.append(ingredient_dict)
-
-        counter = Counter()
-        for ingredient in ingredients_list:
-            key, value = ingredient.get('name'), ingredient.get('amount')
-            counter.update({key: value})
-
-        ingredients_unique_list = [
-            {'name': key, 'amount': value} for key, value in counter.items()
-        ]
-
+        ingredients_unique_list = get_ingredients_unique_list(
+            self,
+            in_shopping_cart
+        )
         buffer = io.BytesIO()
         p = canvas.Canvas(buffer)
         reportlab.rl_config.TTFSearchPath.append(str(BASE_DIR) + '/static')
