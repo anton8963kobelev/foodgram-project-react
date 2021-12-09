@@ -1,11 +1,13 @@
 import base64
-from django.core.files.base import ContentFile
-from rest_framework import serializers
-from recipes.models import (Tag, Ingredient, Recipe, RecipeTag,
-                            RecipeIngredient, Favorite, ShoppingCart)
-from djoser.serializers import UserSerializer, UserCreateSerializer
 
-from users.models import User, Follow
+from django.core.files.base import ContentFile
+from djoser.serializers import UserCreateSerializer, UserSerializer
+from rest_framework import serializers
+
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            RecipeTag, ShoppingCart, Tag)
+from users.models import Follow, User
+
 from .utils import get_boolean
 
 
@@ -55,8 +57,10 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     name = serializers.StringRelatedField(source='ingredient.name')
     measurement_unit = serializers.StringRelatedField(
         source='ingredient.measurement_unit')
-    id = serializers.PrimaryKeyRelatedField(source='ingredient',
-                                            queryset=Ingredient.objects.all())
+    id = serializers.PrimaryKeyRelatedField(
+        source='ingredient',
+        queryset=Ingredient.objects.all()
+    )
 
     class Meta:
         model = RecipeIngredient
@@ -98,16 +102,19 @@ class RecipeSerializer(serializers.ModelSerializer):
         for ingredient in ingredients:
             if int(ingredient['amount']) <= 0:
                 raise serializers.ValidationError(
-                    'Количество ингредиента должно быть больше нуля')
+                    'Количество ингредиента должно быть больше нуля'
+                )
             if ingredient['id'] not in ingredients_dict:
                 instance = ingredient['id']
                 ingredients_dict[instance] = True
             else:
                 raise serializers.ValidationError(
-                    'Ингридиенты не должны повторяться')
+                    'Ингридиенты не должны повторяться'
+                )
             if data['cooking_time'] <= 0:
                 raise serializers.ValidationError(
-                    'Время готовки должно быть больше нуля')
+                    'Время готовки должно быть больше нуля'
+                )
         return data
 
     def create(self, validated_data):
@@ -121,7 +128,8 @@ class RecipeSerializer(serializers.ModelSerializer):
             current_ingredient = Ingredient.objects.get(pk=ingredient['id'])
             amount = ingredient['amount']
             RecipeIngredient.objects.create(
-                recipe=recipe, ingredient=current_ingredient, amount=amount)
+                recipe=recipe, ingredient=current_ingredient, amount=amount
+            )
         return recipe
 
     def update(self, instance, validated_data):
@@ -129,8 +137,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients = self.initial_data.pop('ingredients')
 
         instance.name = validated_data.get('name', instance.name)
-        instance.cooking_time = validated_data.get('cooking_time',
-                                                   instance.cooking_time)
+        instance.cooking_time = validated_data.get(
+            'cooking_time',
+            instance.cooking_time
+        )
         instance.text = validated_data.get('text', instance.text)
         instance.image = validated_data.get('image', instance.image)
         instance.save()
@@ -144,7 +154,8 @@ class RecipeSerializer(serializers.ModelSerializer):
             current_ingredient = Ingredient.objects.get(pk=ingredient['id'])
             amount = ingredient['amount']
             RecipeIngredient.objects.create(
-                recipe=instance, ingredient=current_ingredient, amount=amount)
+                recipe=instance, ingredient=current_ingredient, amount=amount
+            )
         return instance
 
 

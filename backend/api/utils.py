@@ -1,14 +1,17 @@
-from recipes.models import RecipeIngredient, Ingredient
 from collections import Counter
+
 from django.core.exceptions import FieldError
-from rest_framework import viewsets, status
-from rest_framework.response import Response
+from rest_framework import status, viewsets
 from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
+
+from recipes.models import Ingredient, RecipeIngredient
 
 
 def queryset_filter(self, model_id_list, model_main, value):
     instances = model_id_list.objects.filter(
-                user_id=self.request.user.id).values(value)
+        user_id=self.request.user.id
+    ).values(value)
     instance_id_list = []
     for instance in instances:
         instance_id_list.append(instance.get(value))
@@ -20,12 +23,13 @@ def get_ingredients_unique_list(self, in_shopping_cart):
     for recipe in in_shopping_cart:
         recipe_id = recipe.get('recipe_id')
         ingredients = RecipeIngredient.objects.filter(
-            recipe_id=recipe_id).values('ingredient_id', 'amount')
+            recipe_id=recipe_id
+        ).values('ingredient_id', 'amount')
         for ingredient in ingredients:
             ingredient_id = ingredient.get('ingredient_id')
             name = Ingredient.objects.get(pk=ingredient_id).name
-            measurement_unit = (Ingredient.objects.get(
-                                pk=ingredient_id).measurement_unit)
+            measurement_unit = Ingredient.objects.get(
+                pk=ingredient_id).measurement_unit
             amount = ingredient.get('amount')
             ingredient_dict = {
                 'name': f'{name} ({measurement_unit})',
@@ -64,41 +68,57 @@ def get_delete(self, request, **kwargs):
     serializer = serializer(instance)
     if request.method == 'GET':
         try:
-            if (model_2.objects.filter(user=request.user,
-                                       author=instance).exists()):
+            if model_2.objects.filter(
+                user=request.user,
+                author=instance
+            ).exists():
                 return Response(
                     {'error': 'Вы уже подписаны на пользователя'},
-                    status=status.HTTP_400_BAD_REQUEST)
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             if request.user == instance:
-                return Response({'error': 'Нельзя подписаться на себя'},
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'error': 'Нельзя подписаться на себя'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             model_2.objects.create(user=request.user, author=instance)
         except FieldError:
-            if (model_2.objects.filter(user=request.user,
-                                       recipe=instance).exists()):
+            if model_2.objects.filter(
+                user=request.user,
+                recipe=instance
+            ).exists():
                 return Response(
                     {'error': f'Рецепт уже добавлен в {message}'},
-                    status=status.HTTP_400_BAD_REQUEST)
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             model_2.objects.create(user=request.user, recipe=instance)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     if request.method == 'DELETE':
         try:
-            if not (model_2.objects.filter(user=request.user,
-                                           author=instance).exists()):
+            if not model_2.objects.filter(
+                user=request.user,
+                author=instance
+            ).exists():
                 return Response(
                     {'error': 'Сначала надо подписаться на пользователя'},
-                    status=status.HTTP_400_BAD_REQUEST)
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             if request.user == instance:
-                return Response({'error': 'Нельзя удалить подпись на себя'},
-                                status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'error': 'Нельзя удалить подпись на себя'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             model_2.objects.filter(user=request.user, author=instance).delete()
         except FieldError:
-            if not (model_2.objects.filter(user=request.user,
-                                           recipe=instance).exists()):
+            if not model_2.objects.filter(
+                user=request.user,
+                recipe=instance
+            ).exists():
                 return Response(
                     {'error': f'Сначала надо добавить рецепт в {message}'},
-                    status=status.HTTP_400_BAD_REQUEST)
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             model_2.objects.filter(user=request.user, recipe=instance).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

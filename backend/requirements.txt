@@ -7,3 +7,4 @@ Pillow
 reportlab
 django-filter
 gunicorn
+isort

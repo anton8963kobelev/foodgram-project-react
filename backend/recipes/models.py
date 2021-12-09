@@ -1,6 +1,7 @@
+from django.contrib import admin
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.contrib import admin
+
 from users.models import User
 
 
@@ -22,20 +23,29 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    tags = models.ManyToManyField(Tag, related_name='recipe_tags',
-                                  through='RecipeTag')
-    author = models.ForeignKey(User, related_name='authors',
-                               on_delete=models.CASCADE)
-    ingredients = models.ManyToManyField(Ingredient,
-                                         related_name='recipe_ingredients',
-                                         through='RecipeIngredient')
+    tags = models.ManyToManyField(
+        Tag,
+        related_name='recipe_tags',
+        through='RecipeTag'
+    )
+    author = models.ForeignKey(
+        User,
+        related_name='authors',
+        on_delete=models.CASCADE
+    )
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        related_name='recipe_ingredients',
+        through='RecipeIngredient'
+    )
     name = models.CharField(max_length=200)
     image = models.ImageField(upload_to='recipes/images/')
     text = models.TextField()
     cooking_time = models.PositiveSmallIntegerField(
         default=1,
         validators=[MinValueValidator(limit_value=1,
-                    message='Время приготовления должно быть больше 0')])
+                    message='Время приготовления должно быть больше 0')]
+    )
     publication_date = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
@@ -60,14 +70,21 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveSmallIntegerField(
         default=1,
         validators=[MinValueValidator(limit_value=1,
-                    message='Количество ингредиента должно быть больше 0')])
+                    message='Количество ингредиента должно быть больше 0')]
+    )
 
 
 class Favorite(models.Model):
-    user = (models.ForeignKey(User, on_delete=models.CASCADE,
-            related_name='favorite'))
-    recipe = (models.ForeignKey(Recipe, on_delete=models.CASCADE,
-              related_name='in_favorite'))
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='favorite'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='in_favorite'
+    )
 
     class Meta:
         models.UniqueConstraint(
@@ -77,10 +94,16 @@ class Favorite(models.Model):
 
 
 class ShoppingCart(models.Model):
-    user = (models.ForeignKey(User, on_delete=models.CASCADE,
-            related_name='shopping_cart'))
-    recipe = (models.ForeignKey(Recipe, on_delete=models.CASCADE,
-              related_name='in_shopping_cart'))
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='shopping_cart'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='in_shopping_cart'
+    )
 
     class Meta:
         models.UniqueConstraint(
