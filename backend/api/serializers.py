@@ -6,6 +6,7 @@ from recipes.models import (Tag, Ingredient, Recipe, RecipeTag,
 from djoser.serializers import UserSerializer, UserCreateSerializer
 
 from users.models import User, Follow
+from .utils import get_boolean
 
 
 class Base64ToImageField(serializers.ImageField):
@@ -33,11 +34,7 @@ class UserCustomSerializer(UserSerializer):
                   'is_subscribed')
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request', None)
-        user = request.user
-        if not request or not user.is_authenticated:
-            return False
-        return Follow.objects.filter(user=user, author=obj).exists()
+        return get_boolean(self, Follow, obj)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -86,18 +83,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         ).data
 
     def get_is_favorited(self, obj):
-        request = self.context.get('request', None)
-        user = request.user
-        if not request or not user.is_authenticated:
-            return False
-        return Favorite.objects.filter(user=user, recipe=obj).exists()
+        return get_boolean(self, Favorite, obj)
 
     def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request', None)
-        user = request.user
-        if not request or not user.is_authenticated:
-            return False
-        return ShoppingCart.objects.filter(user=user, recipe=obj).exists()
+        return get_boolean(self, ShoppingCart, obj)
 
     def validate(self, data):
         if 'tags' not in self.initial_data:
@@ -183,13 +172,7 @@ class FollowSerializer(serializers.ModelSerializer):
         ).data
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request', None)
-        if not request:
-            return True
-        user = request.user
-        if user.is_anonymous:
-            return False
-        return Follow.objects.filter(user=user, author=obj).exists()
+        return get_boolean(self, Follow, obj)
 
     def get_recipes_count(self, obj):
         return Recipe.objects.filter(author=obj).count()

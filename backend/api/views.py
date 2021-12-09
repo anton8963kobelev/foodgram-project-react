@@ -12,7 +12,6 @@ from django.http import FileResponse
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-# from collections import Counter
 
 from .permissions import IsAuthorOrAdminOrReadOnly, IsAdminOrReadOnly
 from .paginations import CustomPaginator

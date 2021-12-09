@@ -1,5 +1,6 @@
 from recipes.models import RecipeIngredient, Ingredient
 from collections import Counter
+from django.core.exceptions import FieldError
 
 
 def queryset_filter(self, model_id_list, model_main, value):
@@ -38,3 +39,13 @@ def get_ingredients_unique_list(self, in_shopping_cart):
         {'name': key, 'amount': value} for key, value in counter.items()
     ]
     return ingredients_unique_list
+
+
+def get_boolean(self, model, obj):
+    request = self.context.get('request', None)
+    if not request or not request.user.is_authenticated:
+        return False
+    try:
+        return model.objects.filter(user=request.user, author=obj).exists()
+    except FieldError:
+        return model.objects.filter(user=request.user, recipe=obj).exists()
