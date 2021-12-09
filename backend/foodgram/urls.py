@@ -18,7 +18,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls import handler404
 from django.conf.urls.static import static
-from api.views import error404  # пока просто редирект на рецепты. Потом!
+from api.utils import error404
 
 
 urlpatterns = [
