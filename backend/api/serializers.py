@@ -179,8 +179,7 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes(self, obj):
         return RecipeLightSerializer(
-            Recipe.objects.filter(author=obj).all(), many=True
-        ).data
+            obj.authors.all(), many=True).data
 
     def get_is_subscribed(self, obj):
         return get_boolean(self, Follow, obj)

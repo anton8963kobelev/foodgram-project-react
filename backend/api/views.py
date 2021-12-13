@@ -2,7 +2,6 @@ import io
 
 import reportlab
 from django.http import FileResponse
-from djoser.conf import settings
 from djoser.views import UserViewSet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -15,7 +14,8 @@ from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from users.models import Follow, User
 
 from .paginations import CustomPaginator
-from .permissions import IsAdminOrReadOnly, IsAuthorOrAdminOrReadOnly
+from .permissions import (IsAdminOrReadOnly, IsAuthorOrAdminOrReadOnly,
+                          IsAuthenticatedReadOnly)
 from .serializers import (FollowSerializer, IngredientSerializer,
                           RecipeLightSerializer, RecipeSerializer,
                           TagSerializer)
@@ -24,16 +24,16 @@ from .utils import get_delete, get_ingredients_unique_list, queryset_filter
 
 class UserCustomViewSet(UserViewSet):
     pagination_class = CustomPaginator
+    permission_classes = (IsAuthenticatedReadOnly,)
 
     def get_permissions(self):
-        if self.action == "create":
-            self.permission_classes = settings.PERMISSIONS.user_create
-        elif self.action == "list" or self.action == 'retrieve':
-            self.permission_classes = settings.PERMISSIONS.user_list
-        elif self.action == "set_password":
-            self.permission_classes = settings.PERMISSIONS.set_password
-        elif self.action == "destroy":
-            self.permission_classes = settings.PERMISSIONS.user_delete
+        if (self.action == "list" or self.action == 'retrieve'
+                or self.action == 'create'):
+            return (permissions.AllowAny(),)
+        if self.action == "set_password":
+            return (IsAuthorOrAdminOrReadOnly(),)
+        if self.action == "destroy":
+            return (permissions.IsAdminUser(),)
         return super().get_permissions()
 
     @action(
