@@ -2,7 +2,6 @@ from collections import Counter
 
 from django.core.exceptions import FieldError
 from rest_framework import status, viewsets
-from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 from recipes.models import Ingredient, RecipeIngredient
@@ -121,7 +120,3 @@ def get_delete(self, request, **kwargs):
                 )
             model_2.objects.filter(user=request.user, recipe=instance).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-def error404(request):
-    raise NotFound(detail="Ошибка 404, страница не найдена", code=404)

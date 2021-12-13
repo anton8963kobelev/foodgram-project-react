@@ -2,6 +2,13 @@
 
 ## Описание проекта
 
+Адрес сервера:
+[http://51.250.28.48/](http://51.250.28.48/)
+
+### Данные администратора:
+- логин: admin
+- пароль: 456789
+
 Продуктовый помощник - это сервис, где пользователи смогут:
 * публиковать рецепты;
 * подписываться на публикации других пользователей;
@@ -10,5 +17,46 @@
 
 ## Запуск проекта
 
-1. В папке *infra* выполните команду ```docker-compose up```.
-2. Перейдите по ссылке [http://127.0.0.1/](http://127.0.0.1/)
+Клонируйте репозиторий: 
+ 
+``` 
+git clone https://github.com/anton8963kobelev/foodgram-project-react.git
+``` 
+
+Перейдите в папку *infra*:
+
+``` 
+cd foodgram-project-react/infra/
+``` 
+ 
+Запустите контейнеры: 
+ 
+``` 
+docker-compose up
+``` 
+ 
+Запустите миграции: 
+ 
+``` 
+docker-compose exec web python manage.py migrate --noinput
+```
+ 
+Соберите статику: 
+ 
+``` 
+docker-compose exec web python manage.py collectstatic --no-input  
+``` 
+ 
+Создайте суперпользователя, введя логин, почтовый адрес и пароль: 
+ 
+``` 
+docker-compose exec web python manage.py createsuperuser 
+``` 
+ 
+Заполните базу данных с ингредиентами: 
+ 
+``` 
+docker-compose exec web python manage.py loaddata ingredient.json
+```
+
+Полный список возможных запросов и соответствующих ответов можно найти в документации *Redoc*.
