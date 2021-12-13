@@ -12,9 +12,7 @@ services:
 
   web:
     restart: always
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: anton8963kobelev/foodgram_backend:13.12.2021
     volumes:
       - static_value:/app/static/
       - media_value:/app/media/
