@@ -13,11 +13,14 @@ from .utils import get_boolean
 
 class Base64ToImageField(serializers.ImageField):
     def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='image.' + ext)
-            return data
+        if not (isinstance(data, str) and data.startswith('data:image')):
+            raise serializers.ValidationError(
+                'Неверный формат изображения'
+            )
+        format, imgstr = data.split(';base64,')
+        ext = format.split('/')[-1]
+        data = ContentFile(base64.b64decode(imgstr), name='image.' + ext)
+        return data
 
 
 class UserCreateCustomSerializer(UserCreateSerializer):
@@ -114,10 +117,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         if int(data['cooking_time']) <= 0:
             raise serializers.ValidationError(
                 'Время готовки должно быть больше нуля'
-            )
-        if not data['image'].startswith('data:image'):
-            raise serializers.ValidationError(
-                'Неверный формат изображения'
             )
         return data
 
