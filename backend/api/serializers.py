@@ -111,10 +111,14 @@ class RecipeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Ингридиенты не должны повторяться'
                 )
-            if data['cooking_time'] <= 0:
-                raise serializers.ValidationError(
-                    'Время готовки должно быть больше нуля'
-                )
+        if int(data['cooking_time']) <= 0:
+            raise serializers.ValidationError(
+                'Время готовки должно быть больше нуля'
+            )
+        if not data['image'].startswith('data:image'):
+            raise serializers.ValidationError(
+                'Неверный формат изображения'
+            )
         return data
 
     def create(self, validated_data):
