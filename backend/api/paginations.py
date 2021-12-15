@@ -17,5 +17,9 @@ class CustomPaginator(PageNumberPagination):
                 {"error": "Для запрашиваемой страницы результатов не найдено"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        serialized_page = serializer_obj(page_data, many=True)
+        serialized_page = serializer_obj(
+            page_data,
+            many=True,
+            context={'request': request}
+        )
         return self.get_paginated_response(serialized_page.data)
