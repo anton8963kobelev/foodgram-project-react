@@ -184,7 +184,8 @@ class FollowSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         recipes_limit = int(request.query_params.get('recipes_limit'))
         return RecipeLightSerializer(
-            obj.authors.all()[:recipes_limit], many=True).data
+            obj.authors.all()[:recipes_limit], many=True
+        ).data
 
     def get_is_subscribed(self, obj):
         return get_boolean(self, Follow, obj)
