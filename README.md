@@ -59,4 +59,6 @@ docker-compose exec web python manage.py createsuperuser
 docker-compose exec web python manage.py loaddata ingredient.json
 ```
 
-Полный список возможных запросов и соответствующих ответов можно найти в документации *Redoc*.
+Полный список возможных запросов и соответствующих ответов можно найти в документации *Redoc* по ссылке:
+[http://51.250.30.99/api/docs/](http://51.250.30.99/api/docs/)
+
